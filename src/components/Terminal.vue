@@ -18,7 +18,7 @@
         "-------------",
         " ",
         "/auth <username?> - Authenticate with the server. Optional username. If missing, it will prompt for username.",
-        "/register <username?> - Register an account with the server. Option username. If missing, it will prompt for username.",
+        "/register <username?> - Register an account with the server. Optional username. If missing, it will prompt for username.",
         " ",
     ].join("\n");
 
@@ -87,7 +87,7 @@
                             case "register":
                                 this.ask("Username: ").then((username: string) => {
                                     this.ask("Password: ", true).then((p1: string) => {
-                                        this.ask("Password: ", true).then((p2: string) => {
+                                        this.ask("Re-Enter Password: ", true).then((p2: string) => {
                                             if (p1 == p2) 
                                                 this.$refs.network.sendEvent({event: "REGISTER", username, password: p1});
                                             else
