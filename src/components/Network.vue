@@ -1,49 +1,47 @@
 <template>
-    <div id="network_empty"></div>
+  <div id="network_empty"></div>
 </template>
 <script lang="ts">
-    import { Options, Vue } from "vue-class-component";
+import { defineComponent, inject, onMounted } from "vue";
 
-    @Options({
-        data() {
-            return {
-                socket: new WebSocket(this.websocket_uri),
-            }
-        },
-        mounted() {
-            this.socket.onmessage = (ev: MessageEvent) => {
-                this.$emit("message", ev.data);
-            }
-            this.socket.onerror = (ev: ErrorEvent) => {
-                this.$emit("error", ev.error);
-            }
-            this.socket.onopen = () => {
-                this.$emit("open");
-            }
-            this.socket.onclose = (ev: CloseEvent) => {
-                this.$emit("close", ev.code, ev.reason);
-            }
-        },
-        emits: ["message", "open", "error", "close"],
-        methods: {
-            ensureClose(): boolean {
-                return this.socket.readyState != WebSocket.OPEN;
-            },
-            send(message: string | Uint8Array) {
-                if (this.ensureClose()) return;
-                this.socket.send(message);
-            },
-            sendEvent(data: {[key: string]: any; }) {
-                if (this.ensureClose()) return;
-                this.send(JSON.stringify(data));
-            }
-        },
-        inject: {
-            websocket_uri: {
-                from: "websocket_uri",
-            }
+export default defineComponent({
+  emits: ["message", "open", "error", "close"],
+  setup(props, { emit }) {
+    const websocket_uri = inject("websocket_uri") as string;
+    let socket = new WebSocket(websocket_uri);
+    onMounted(() => {
+      socket.addEventListener(
+        "message",
+        (ev: MessageEvent<string | Uint8Array>) => {
+          emit("message", ev.data);
         }
-    })
-    export default class Network extends Vue {
-    }
+      );
+      socket.addEventListener("error", () => {
+        emit("error", new Error("A WebSocket Error Occurred."));
+      });
+      socket.addEventListener("open", () => {
+        emit("open");
+      });
+      socket.addEventListener("close", (ev) => {
+        emit("close", ev.code, ev.reason);
+      });
+    });
+    return {
+      socket,
+    };
+  },
+  methods: {
+    ensureClose(): boolean {
+      return this.socket.readyState != WebSocket.OPEN;
+    },
+    send(message: string | Uint8Array) {
+      if (this.ensureClose()) return;
+      this.socket.send(message);
+    },
+    sendEvent(event: string, data: { [key: string]: any }) {
+      data.event = event.toUpperCase();
+      this.send(JSON.stringify(data));
+    },
+  },
+});
 </script>

@@ -1,11 +1,15 @@
 <template>
-  <div id="terminal_container" class="terminal-container" @click="focusTerminal">
-    <Terminal ref="terminal" promptText="> "/>
+  <div
+    id="terminal_container"
+    class="terminal-container"
+    @click="focusTerminal"
+  >
+    <Terminal ref="terminal" promptText="> " />
   </div>
 </template>
 
 <script lang="ts">
-import { Options, Vue } from 'vue-class-component';
+import { Options, Vue } from "vue-class-component";
 import Terminal from "./components/Terminal.vue";
 
 @Options({
@@ -15,14 +19,15 @@ import Terminal from "./components/Terminal.vue";
   methods: {
     focusTerminal() {
       this.$refs.terminal.focusInput();
-    }
-  }
+    },
+  },
 })
 export default class App extends Vue {}
 </script>
 
 <style>
-body, html {
+body,
+html {
   background-color: rgb(41, 48, 56);
   width: 99vw;
   margin: 0px;
