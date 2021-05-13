@@ -32,10 +32,10 @@ jobs:
         run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Grab Dependencies
-        run: yarn install
+        run: ls -alF
       
       - name: Build vue app
-        run: yarn build; ls -alF
+        run: yarn build
 
       - name: Deploy with rsync
         run: rsync -avz ./dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/XeonClient/
