@@ -1,4 +1,7 @@
-# xeonvueclient
+# XeonClient
+Project Xeon Terminal Interface.
+
+This new and improved client is written using Vue3.
 
 ## Project setup
 ```
