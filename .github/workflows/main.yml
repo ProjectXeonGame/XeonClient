@@ -35,7 +35,7 @@ jobs:
         run: yarn install
       
       - name: Build vue app
-        run: yarn build
+        run: yarn build; ls -alF
 
       - name: Deploy with rsync
         run: rsync -avz ./dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/XeonClient/
