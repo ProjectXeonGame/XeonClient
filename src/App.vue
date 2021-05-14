@@ -4,25 +4,31 @@
     class="terminal-container"
     @click="focusTerminal"
   >
-    <Terminal ref="terminal" promptText="> " />
+    <Terminal ref="terminal" />
   </div>
 </template>
 
 <script lang="ts">
-import { Options, Vue } from "vue-class-component";
+import { defineComponent, ref, Ref } from "vue";
 import Terminal from "./components/Terminal.vue";
 
-@Options({
+export default defineComponent({
+  setup() {
+    const terminal = ref(null);
+
+    return {
+      terminal: (terminal as unknown) as Ref<typeof Terminal>,
+    };
+  },
   components: {
     Terminal,
   },
   methods: {
     focusTerminal() {
-      this.$refs.terminal.focusInput();
+      this.terminal.focusInput();
     },
   },
-})
-export default class App extends Vue {}
+});
 </script>
 
 <style>

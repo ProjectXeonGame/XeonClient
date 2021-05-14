@@ -13,18 +13,12 @@
       />
     </div>
   </div>
-  <Network
-    ref="network"
-    @message="handleMessage"
-    @error="handleError"
-    @open="handleOpen"
-    @close="handleClose"
-  />
 </template>
 
 <script lang="ts">
-import { Options, Vue } from "vue-class-component";
-import Network from "./Network.vue";
+import { defineComponent, ref, inject, onMounted } from "vue";
+/* eslint-disable no-unused-vars */
+type PromptResolver = (response: string) => void;
 
 const TerminalHelpFile = [
   " ",
@@ -36,101 +30,125 @@ const TerminalHelpFile = [
   " ",
 ].join("\n");
 
-@Options({
-  components: {
-    Network,
-  },
-  data() {
-    return {
-      output: [],
-      inputValue: "",
-      prompt: this.promptText,
-      promptResolver: null,
-    };
-  },
-  mounted() {
-    this.focusInput();
-  },
-  methods: {
-    scrollDown() {
-      this.$refs.inputRef.scrollIntoView({ behavior: "smooth" });
-    },
-    focusInput() {
-      this.$refs.inputRef.focus();
-    },
-    setPasswordState(state: boolean = true) {
-      this.$refs.inputRef.setAttribute("type", state ? "password" : "text");
-    },
-    getPasswordState(): boolean {
-      return this.$refs.inputRef.getAttribute("type") == "password";
-    },
-    async ask(prompt: string, password: boolean = false): Promise<string> {
-      let tempPrompt = this.prompt;
-      this.prompt = prompt;
-      this.setPasswordState(password);
+export default defineComponent({
+  setup() {
+    const websocket_uri = inject("websocket_uri") as string;
+    let prompt = ref<string>("> ");
+    let output = ref<string[]>([]);
+    let socket: WebSocket;
+    let inputValue = ref<string>();
+    let promptResolver: PromptResolver | null = null;
+    const inputRef = ref<HTMLInputElement>();
+
+    function ensureClose(): boolean {
+      return socket.readyState != WebSocket.OPEN;
+    }
+    function send(message: string | Uint8Array) {
+      if (ensureClose()) return;
+      socket.send(message);
+    }
+    function sendEvent(event: string, data: { [key: string]: any }) {
+      data.event = event.toUpperCase();
+      send(JSON.stringify(data));
+    }
+
+    function scrollDown() {
+      inputRef.value?.scrollIntoView({ behavior: "smooth" });
+    }
+
+    function focusInput() {
+      inputRef.value?.focus();
+    }
+
+    function setPasswordState(state: boolean = true) {
+      inputRef.value?.setAttribute("type", state ? "password" : "text");
+    }
+
+    function getPasswordState(): boolean {
+      return inputRef.value?.getAttribute("type") == "password";
+    }
+
+    async function ask(
+      promptText: string,
+      password: boolean = false
+    ): Promise<string> {
+      let tempPrompt = prompt.value;
+      prompt.value = promptText;
+      setPasswordState(password);
       return await new Promise((resolve) => {
-        this.promptResolver = (res: string) => {
-          this.prompt = tempPrompt;
-          this.setPasswordState(false);
-          this.promptResolver = null;
+        promptResolver = (res: string) => {
+          prompt.value = tempPrompt;
+          setPasswordState(false);
+          promptResolver = null;
           resolve(res);
         };
       });
-    },
-    submit() {
-      const inptxt = this.inputValue;
+    }
+
+    function submit() {
+      const inptxt = inputValue.value || "";
       if (inptxt.trim().length == 0) return;
-      this.inputValue = "";
-      if (this.promptResolver != null) {
-        this.promptResolver(inptxt);
+      inputValue.value = "";
+      if (promptResolver != null) {
+        promptResolver(inptxt);
       } else {
-        if (!this.getPasswordState()) this.log(`${this.prompt}${inptxt}`);
+        if (!getPasswordState()) log(`${prompt.value}${inptxt}`);
         if (inptxt[0] == "/") {
           // command
           const cmd: string[] = inptxt.substring(1).split(" ");
           switch (cmd[0]) {
             case "auth":
-              this.ask("Username: ").then((username: string) => {
-                this.ask("Password: ", true).then((password: string) => {
-                  this.$refs.network.sendEvent("authenticate", {
+              if (ensureClose()) {
+                log("No connection available.");
+                break;
+              }
+              ask("Username: ").then((username: string) => {
+                ask("Password: ", true).then((password: string) => {
+                  sendEvent("authenticate", {
                     username,
                     password,
                   });
                 });
               });
               if (cmd[1] != undefined && cmd[1].trim().length > 0)
-                this.promptResolver(cmd[1].trim());
+                ((promptResolver as unknown) as (val: string) => void)(
+                  cmd[1].trim()
+                );
               break;
             case "register":
-              this.ask("Username: ").then((username: string) => {
-                this.ask("Password: ", true).then((p1: string) => {
-                  this.ask("Re-Enter Password: ", true).then((p2: string) => {
+              if (ensureClose()) {
+                log("No connection available.");
+                break;
+              }
+              ask("Username: ").then((username: string) => {
+                ask("Password: ", true).then((p1: string) => {
+                  ask("Re-Enter Password: ", true).then((p2: string) => {
                     if (p1 == p2)
-                      this.$refs.network.sendEvent("register", {
+                      sendEvent("register", {
                         username,
                         password: p1,
                       });
-                    else
-                      this.log("Registration Error: Passwords did not match.");
+                    else log("Registration Error: Passwords did not match.");
                   });
                 });
               });
               if (cmd[1] != undefined && cmd[1].trim().length > 0)
-                this.promptResolver(cmd[1].trim());
+                ((promptResolver as unknown) as PromptResolver)(cmd[1].trim());
               break;
             case "help":
-              this.log(TerminalHelpFile);
+              log(TerminalHelpFile);
               break;
             default:
-              this.log(`Unknown command: '${cmd[0]}'`);
+              log(`Unknown command: '${cmd[0]}'`);
               break;
           }
         } else {
-          this.$refs.network.sendEvent("line", { data: inptxt });
+          sendEvent("line", { data: inptxt });
         }
       }
-    },
-    log(...args: any[]) {
+    }
+
+    function log(...args: any[]) {
       function stringify(val: any): string {
         if (val == undefined) return "";
         if (typeof val == "object") {
@@ -139,33 +157,70 @@ const TerminalHelpFile = [
           return val.toString();
         }
       }
-      this.output.push(args.map((v) => stringify(v)).join(" "));
-      this.scrollDown();
-    },
-    handleMessage(data: string | Uint8Array) {
+      output.value.push(args.map((v) => stringify(v)).join(" "));
+      scrollDown();
+    }
+
+    function handleMessage(data: string | Uint8Array) {
       if (typeof data == "string") {
-        this.log(data);
+        log(data);
       } else {
         //
       }
-    },
-    handleError(err: Error) {
-      this.log("Error occurred in websocket:", err);
-    },
-    handleOpen() {
-      this.log("Connected.");
-    },
-    handleClose(code: number, reason: string) {
-      this.log("Disconnected. Code", code, "Reason:", reason);
-    },
+    }
+
+    function handleOpen() {
+      log("Connected.");
+    }
+
+    function handleError(err: Error) {
+      log("Error occurred in websocket:", err);
+    }
+
+    function handleClose(code: number, reason: string) {
+      log("Disconnected. Code", code, "Reason:", reason);
+    }
+
+    onMounted(() => {
+      socket = new WebSocket(websocket_uri);
+      socket.addEventListener(
+        "message",
+        (ev: MessageEvent<string | Uint8Array>) => {
+          handleMessage(ev.data);
+        }
+      );
+      socket.addEventListener("error", () => {
+        handleError(new Error("A WebSocket Error Occurred."));
+      });
+      socket.addEventListener("open", () => {
+        handleOpen();
+      });
+      socket.addEventListener("close", (ev) => {
+        handleClose(ev.code, ev.reason);
+      });
+      focusInput();
+    });
+
+    return {
+      prompt,
+      output,
+      inputValue,
+      promptResolver: promptResolver as PromptResolver | null,
+      inputRef,
+      scrollDown,
+      focusInput,
+      ask,
+      setPasswordState,
+      getPasswordState,
+      submit,
+      log,
+      handleMessage,
+      handleClose,
+      handleError,
+      handleOpen,
+    };
   },
-  props: {
-    promptText: String,
-  },
-})
-export default class Terminal extends Vue {
-  promptText!: string;
-}
+});
 </script>
 
 <style scoped>
