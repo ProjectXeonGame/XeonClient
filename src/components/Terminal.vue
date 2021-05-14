@@ -1,11 +1,22 @@
 <template>
   <div id="terminal" class="terminal">
-    <div class="terminal_output terminal">{{ output }}</div>
+    <div
+      class="terminal_output terminal"
+      :style="'font-family: ' + terminalFont + ';'"
+    >
+      {{ output }}
+    </div>
     <div class="terminal_input_line terminal">
-      <div class="terminal_input_prompt terminal">{{ prompt }}</div>
+      <div
+        class="terminal_input_prompt terminal"
+        style="font-family: {{ terminalFont }};"
+      >
+        {{ prompt }}
+      </div>
       <input
         ref="inputRef"
         type="text"
+        style="font-family: {{ terminalFont }};"
         @keydown.enter.prevent="submit"
         @keydown.up.prevent="onUpArrow"
         @keydown.down.prevent="onDownArrow"
@@ -21,6 +32,15 @@
 import { defineComponent, ref, inject, onMounted } from "vue";
 /* eslint-disable no-unused-vars */
 type PromptResolver = (response: string) => void;
+
+const fonts: { [key: string]: string } = {
+  spacemono: "SpaceMono",
+  monospace: "monospace",
+  jetbrains: "JetBrains Mono",
+  fira: "Fira Mono",
+  cascadia: "Cascadia Mono",
+  cascadiapl: "Cascadia Mono PL",
+};
 
 class TerminalHistory {
   private history: string[] = [];
@@ -70,6 +90,7 @@ export default defineComponent({
     let output = ref<string>("");
     let socket: WebSocket;
     let inputValue = ref<string>();
+    let terminalFont = ref<string>("monospace");
     let promptResolver: PromptResolver | null = null;
     const inputRef = ref<HTMLInputElement>();
     let history = ref<TerminalHistory>(new TerminalHistory());
@@ -144,6 +165,18 @@ export default defineComponent({
           // command
           const cmd: string[] = inptxt.substring(1).split(" ");
           switch (cmd[0]) {
+            case "font":
+              if (cmd[1] != undefined && fonts[cmd[1]] != undefined) {
+                terminalFont.value = fonts[cmd[1]];
+                log("Font family changed to:", terminalFont.value);
+              } else {
+                log(
+                  `\nAvailable Fonts:\n\n${Object.keys(fonts)
+                    .map((k) => `${k} => ${fonts[k]}`)
+                    .join("\n")}\n`
+                );
+              }
+              break;
             case "auth":
               if (ensureClose()) {
                 log("No connection available.");
@@ -269,6 +302,7 @@ export default defineComponent({
       handleOpen,
       onUpArrow,
       onDownArrow,
+      terminalFont,
     };
   },
 });
@@ -279,6 +313,22 @@ export default defineComponent({
   font-family: SpaceMono;
   src: url("../assets/fonts/SpaceMono/SpaceMono-Regular.ttf");
 }
+@font-face {
+  font-family: "Cascadia Mono";
+  src: url("../assets/fonts/Cascadia Mono/CascadiaMono.ttf");
+}
+@font-face {
+  font-family: "Cascadia Mono PL";
+  src: url("../assets/fonts/Cascadia Mono/CascadiaMonoPL.ttf");
+}
+@font-face {
+  font-family: "Fira Mono";
+  src: url("../assets/fonts/Fira Mono/FiraMono-Regular.ttf");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../assets/fonts/JetBrains Mono/JetBrainsMono-VariableFont_wght.ttf");
+}
 #terminal {
   overflow-x: hidden;
   overflow-y: auto;
@@ -287,7 +337,7 @@ export default defineComponent({
   height: 100%;
 }
 .terminal {
-  font-family: SpaceMono, monospace;
+  font-family: monospace;
   font-size: 1em;
   white-space: pre;
   display: flex;
