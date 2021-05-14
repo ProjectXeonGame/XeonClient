@@ -9,14 +9,14 @@
     <div class="terminal_input_line terminal">
       <div
         class="terminal_input_prompt terminal"
-        style="font-family: {{ terminalFont }};"
+        :style="'font-family: ' + terminalFont + ';'"
       >
         {{ prompt }}
       </div>
       <input
         ref="inputRef"
         type="text"
-        style="font-family: {{ terminalFont }};"
+        :style="'font-family: ' + terminalFont + ';'"
         @keydown.enter.prevent="submit"
         @keydown.up.prevent="onUpArrow"
         @keydown.down.prevent="onDownArrow"
@@ -338,7 +338,7 @@ export default defineComponent({
 }
 .terminal {
   font-family: monospace;
-  font-size: 1em;
+  font-size: 10pt;
   white-space: pre;
   display: flex;
   flex-flow: column;
