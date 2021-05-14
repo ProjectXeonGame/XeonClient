@@ -1021,6 +1021,30 @@
   dependencies:
     defer-to-connect "^2.0.0"
 
+"@tauri-apps/cli@1.0.0-beta.0":
+  version "1.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/cli/-/cli-1.0.0-beta.0.tgz#19171642d4ee3ecf80e8a68d620d90d0b37e8848"
+  integrity sha512-l/iCGNGbCG+43Jdcch5cfG/flAamUz2Y12WhWjD1vkOtr5cKZk98v2BPL9s45tt2hVUtk0wgl1s/ol2K+SbO5g==
+  dependencies:
+    "@tauri-apps/toml" "2.2.4"
+    chalk "4.1.1"
+    cross-env "7.0.3"
+    cross-spawn "7.0.3"
+    fs-extra "10.0.0"
+    got "11.8.2"
+    imagemin "8.0.0"
+    imagemin-optipng "8.0.0"
+    imagemin-zopfli "7.0.0"
+    inquirer "8.0.0"
+    is-png "3.0.0"
+    minimist "1.2.5"
+    ms "2.1.3"
+    png2icons "2.0.1"
+    read-chunk "3.2.0"
+    semver "7.3.5"
+    sharp "0.28.1"
+    update-notifier "5.1.0"
+
 "@tauri-apps/cli@^1.0.0-beta.2":
   version "1.0.0-beta.2"
   resolved "https://registry.yarnpkg.com/@tauri-apps/cli/-/cli-1.0.0-beta.2.tgz#2ae81c1dd87df7fb2cb6d80ce769a5f9566d0153"
@@ -1578,7 +1602,7 @@
   optionalDependencies:
     vue-loader-v16 "npm:vue-loader@^16.1.0"
 
-"@vue/cli-shared-utils@^4.5.13":
+"@vue/cli-shared-utils@^4.1.1", "@vue/cli-shared-utils@^4.5.13":
   version "4.5.13"
   resolved "https://registry.yarnpkg.com/@vue/cli-shared-utils/-/cli-shared-utils-4.5.13.tgz#acd40f31b4790f1634292bdaa5fca95dc1e0ff50"
   integrity sha512-HpnOrkLg42RFUsQGMJv26oTG3J3FmKtO2WSRhKIIL+1ok3w9OjGCtA3nMMXN27f9eX14TqO64M36DaiSZ1fSiw==
@@ -4412,7 +4436,7 @@ execa@^1.0.0:
     signal-exit "^3.0.0"
     strip-eof "^1.0.0"
 
-execa@^3.3.0:
+execa@^3.3.0, execa@^3.4.0:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/execa/-/execa-3.4.0.tgz#c08ed4550ef65d858fac269ffc8572446f37eb89"
   integrity sha512-r9vdGQk4bmCuK1yKQu1KTwcT2zwfWdbdaXfCtAh+5nU/4fSX+JAb7vZGvI5naJrQlvONrEB20jeruESI69530g==
@@ -8282,7 +8306,7 @@ postcss@^8.1.10:
     nanoid "^3.1.23"
     source-map "^0.6.1"
 
-prebuild-install@^6.1.2:
+prebuild-install@^6.1.1, prebuild-install@^6.1.2:
   version "6.1.2"
   resolved "https://registry.yarnpkg.com/prebuild-install/-/prebuild-install-6.1.2.tgz#6ce5fc5978feba5d3cbffedca0682b136a0b5bff"
   integrity sha512-PzYWIKZeP+967WuKYXlTOhYBgGOvTRSfaKI89XnfJ0ansRAH7hDU45X+K+FZeI1Wb/7p/NnuctPH3g0IqKUuSQ==
@@ -9130,6 +9154,20 @@ sha.js@^2.4.0, sha.js@^2.4.8:
   dependencies:
     inherits "^2.0.1"
     safe-buffer "^5.0.1"
+
+sharp@0.28.1:
+  version "0.28.1"
+  resolved "https://registry.yarnpkg.com/sharp/-/sharp-0.28.1.tgz#9d7bbce1ca95b2c27482243cd4839c62ef40b0b7"
+  integrity sha512-4mCGMEN4ntaVuFGwHx7FvkJQkIgbI+S+F9a3bI7ugdvKjPr4sF7/ibvlRKhJyzhoQi+ODM+XYY1de8xs7MHbfA==
+  dependencies:
+    color "^3.1.3"
+    detect-libc "^1.0.3"
+    node-addon-api "^3.1.0"
+    prebuild-install "^6.1.1"
+    semver "^7.3.5"
+    simple-get "^3.1.0"
+    tar-fs "^2.1.1"
+    tunnel-agent "^0.6.0"
 
 sharp@0.28.2:
   version "0.28.2"
@@ -10399,6 +10437,15 @@ vue-class-component@^8.0.0-0:
   version "8.0.0-rc.1"
   resolved "https://registry.yarnpkg.com/vue-class-component/-/vue-class-component-8.0.0-rc.1.tgz#db692cd97656eb9a08206c03d0b7398cdb1d9420"
   integrity sha512-w1nMzsT/UdbDAXKqhwTmSoyuJzUXKrxLE77PCFVuC6syr8acdFDAq116xgvZh9UCuV0h+rlCtxXolr3Hi3HyPQ==
+
+vue-cli-plugin-tauri@~1.0.0-beta.0:
+  version "1.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/vue-cli-plugin-tauri/-/vue-cli-plugin-tauri-1.0.0-beta.0.tgz#a9c5d905eb247cda2f55fc91590a789652055bcf"
+  integrity sha512-TeLyCcg8qC4FkNT/ZfLDbW1Rd24tG40HqetIX6reOsh7Hk4E8lDjJohQ+5RCMRCxNTFCc2VHyhQQiRyhdM/kWA==
+  dependencies:
+    "@tauri-apps/cli" "1.0.0-beta.0"
+    "@vue/cli-shared-utils" "^4.1.1"
+    execa "^3.4.0"
 
 vue-eslint-parser@^7.0.0, vue-eslint-parser@^7.6.0:
   version "7.6.0"
