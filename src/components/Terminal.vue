@@ -1,6 +1,6 @@
 <template>
   <div id="terminal" class="terminal">
-    <div class="terminal_output terminal">{{ output.join("\n") }}</div>
+    <div class="terminal_output terminal">{{ output }}</div>
     <div class="terminal_input_line terminal">
       <div class="terminal_input_prompt terminal">{{ prompt }}</div>
       <input
@@ -34,7 +34,7 @@ export default defineComponent({
   setup() {
     const websocket_uri = inject("websocket_uri") as string;
     let prompt = ref<string>("> ");
-    let output = ref<string[]>([]);
+    let output = ref<string>("");
     let socket: WebSocket;
     let inputValue = ref<string>();
     let promptResolver: PromptResolver | null = null;
@@ -157,7 +157,9 @@ export default defineComponent({
           return val.toString();
         }
       }
-      output.value.push(args.map((v) => stringify(v)).join(" "));
+      const v = args.map((v) => stringify(v)).join(" ");
+      if (v.length == 0) return;
+      output.value = `${output.value}${v}\n`;
       scrollDown();
     }
 
