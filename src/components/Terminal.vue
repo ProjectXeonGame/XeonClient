@@ -338,7 +338,7 @@ export default defineComponent({
 }
 .terminal {
   font-family: monospace;
-  font-size: 10pt;
+  font-size: 11pt;
   white-space: pre;
   display: flex;
   flex-flow: column;
