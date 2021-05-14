@@ -165,6 +165,9 @@ export default defineComponent({
           // command
           const cmd: string[] = inptxt.substring(1).split(" ");
           switch (cmd[0]) {
+            case "clear":
+              output.value = "";
+              break;
             case "font":
               if (cmd[1] != undefined && fonts[cmd[1]] != undefined) {
                 terminalFont.value = fonts[cmd[1]];
