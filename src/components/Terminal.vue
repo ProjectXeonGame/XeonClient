@@ -275,6 +275,10 @@ export default defineComponent({
 </script>
 
 <style scoped>
+@font-face {
+  font-family: SpaceMono;
+  src: url("../assets/fonts/SpaceMono/SpaceMono-Regular.ttf");
+}
 #terminal {
   overflow-x: hidden;
   overflow-y: auto;
@@ -283,8 +287,8 @@ export default defineComponent({
   height: 100%;
 }
 .terminal {
-  font-family: monospace;
-  font-size: 12pt;
+  font-family: SpaceMono, monospace;
+  font-size: 1em;
   white-space: pre;
   display: flex;
   flex-flow: column;
