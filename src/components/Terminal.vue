@@ -6,7 +6,9 @@
       <input
         ref="inputRef"
         type="text"
-        @keydown.enter="submit"
+        @keydown.enter.prevent="submit"
+        @keydown.up.prevent="onUpArrow"
+        @keydown.down.prevent="onDownArrow"
         v-model="inputValue"
         class="terminal_input terminal"
         autocomplete="off"
@@ -19,6 +21,37 @@
 import { defineComponent, ref, inject, onMounted } from "vue";
 /* eslint-disable no-unused-vars */
 type PromptResolver = (response: string) => void;
+
+class TerminalHistory {
+  private history: string[] = [];
+  private index: number = 0;
+  private temp: string = "";
+  public getCurrentIndex(): number {
+    return this.index;
+  }
+  public getCurrentLength(): number {
+    return this.history.length;
+  }
+  public setTemp(v: string) {
+    this.temp = v;
+  }
+  public getHistory(dir: number): string {
+    const idx = (this.index -= dir);
+    if (idx > this.history.length - 1) {
+      this.index = this.history.length;
+      const v = this.temp;
+      return v;
+    } else if (idx < 0) {
+      this.index = 0;
+    } else {
+      this.index = idx;
+    }
+    return this.history[this.index];
+  }
+  public addHistory(item: string) {
+    this.index = this.history.push(item);
+  }
+}
 
 const TerminalHelpFile = [
   " ",
@@ -39,6 +72,7 @@ export default defineComponent({
     let inputValue = ref<string>();
     let promptResolver: PromptResolver | null = null;
     const inputRef = ref<HTMLInputElement>();
+    let history = ref<TerminalHistory>(new TerminalHistory());
 
     function ensureClose(): boolean {
       return socket.readyState != WebSocket.OPEN;
@@ -85,6 +119,16 @@ export default defineComponent({
       });
     }
 
+    function onUpArrow() {
+      if (history.value.getCurrentIndex() == history.value.getCurrentLength())
+        history.value.setTemp(inputValue.value || "");
+      inputValue.value = history.value.getHistory(1);
+    }
+
+    function onDownArrow() {
+      inputValue.value = history.value.getHistory(-1);
+    }
+
     function submit() {
       const inptxt = inputValue.value || "";
       if (inptxt.trim().length == 0) return;
@@ -92,7 +136,10 @@ export default defineComponent({
       if (promptResolver != null) {
         promptResolver(inptxt);
       } else {
-        if (!getPasswordState()) log(`${prompt.value}${inptxt}`);
+        if (!getPasswordState()) {
+          log(`${prompt.value}${inptxt}`);
+          history.value.addHistory(inptxt);
+        }
         if (inptxt[0] == "/") {
           // command
           const cmd: string[] = inptxt.substring(1).split(" ");
@@ -220,6 +267,8 @@ export default defineComponent({
       handleClose,
       handleError,
       handleOpen,
+      onUpArrow,
+      onDownArrow,
     };
   },
 });
