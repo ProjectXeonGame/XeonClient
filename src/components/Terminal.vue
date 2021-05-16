@@ -86,7 +86,7 @@ const TerminalHelpFile = [
 export default defineComponent({
   setup() {
     const websocket_uri = inject("websocket_uri") as string;
-    let prompt = ref<string>("> ");
+    let prompt = ref<string>("$ ");
     let output = ref<string>("");
     let socket: WebSocket;
     let inputValue = ref<string>();
@@ -165,6 +165,9 @@ export default defineComponent({
           // command
           const cmd: string[] = inptxt.substring(1).split(" ");
           switch (cmd[0]) {
+            case "clear":
+              output.value = "";
+              break;
             case "font":
               if (cmd[1] != undefined && fonts[cmd[1]] != undefined) {
                 terminalFont.value = fonts[cmd[1]];
@@ -244,8 +247,28 @@ export default defineComponent({
     }
 
     function handleMessage(data: string | Uint8Array) {
+      function parseEvent(
+        d: string
+      ): { [key: string]: any; event: string } | null {
+        try {
+          const obj = JSON.parse(d);
+          if (obj.event == undefined || typeof obj.event != "string")
+            return null;
+          return obj;
+        } catch (e) {
+          return null;
+        }
+      }
       if (typeof data == "string") {
-        log(data);
+        const obj = parseEvent(data);
+        if (obj === null) log(data);
+        else {
+          switch (obj.event) {
+            case "cwd":
+              prompt.value = `user@localhost:${obj.cwd}$ `;
+              break;
+          }
+        }
       } else {
         //
       }
