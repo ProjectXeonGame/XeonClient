@@ -1,17 +1,30 @@
 <template>
   <div id="terminal" class="terminal">
     <div
-      class="terminal_output terminal"
+      ref="terminalOutputRef"
+      class="terminal_output"
       :style="'font-family: ' + terminalFont + ';'"
+      v-for="(ansiobjs, blockid) in output"
+      :key="blockid"
     >
-      {{ output }}
+      <span
+        v-for="(ansi, i) in ansiobjs"
+        :key="i"
+        :class="ansi.classes.join(' ')"
+        v-text="ansi.text"
+      ></span>
     </div>
     <div class="terminal_input_line terminal">
       <div
-        class="terminal_input_prompt terminal"
+        class="terminal_input_prompt"
         :style="'font-family: ' + terminalFont + ';'"
       >
-        {{ prompt }}
+        <span
+          v-for="(ansi, i) in toAnsiObjects(prompt)"
+          :key="i"
+          :class="ansi.classes.join(' ')"
+          v-text="ansi.text"
+        ></span>
       </div>
       <input
         ref="inputRef"
@@ -31,7 +44,186 @@
 <script lang="ts">
 import { defineComponent, ref, inject, onMounted } from "vue";
 /* eslint-disable no-unused-vars */
+/* eslint-disable no-control-regex */
 type PromptResolver = (response: string) => void;
+
+export const colorMap: { [key: string]: string } = {
+  "0;30": "ansi-black",
+  "0;31": "ansi-red",
+  "0;32": "ansi-green",
+  "0;33": "ansi-yellow",
+  "0;34": "ansi-blue",
+  "0;35": "ansi-magenta",
+  "0;36": "ansi-cyan",
+  "0;37": "ansi-white",
+  "1;30": "ansi-bold-black",
+  "1;31": "ansi-bold-red",
+  "1;32": "ansi-bold-green",
+  "1;33": "ansi-bold-yellow",
+  "1;34": "ansi-bold-blue",
+  "1;35": "ansi-bold-magenta",
+  "1;36": "ansi-bold-cyan",
+  "1;37": "ansi-bold-white",
+  "4;30": "ansi-ul-black",
+  "4;31": "ansi-ul-red",
+  "4;32": "ansi-ul-green",
+  "4;33": "ansi-ul-yellow",
+  "4;34": "ansi-ul-blue",
+  "4;35": "ansi-ul-magenta",
+  "4;36": "ansi-ul-cyan",
+  "4;37": "ansi-ul-white",
+  "40": "ansi-bg-black",
+  "41": "ansi-bg-red",
+  "42": "ansi-bg-green",
+  "43": "ansi-bg-yellow",
+  "44": "ansi-bg-blue",
+  "45": "ansi-bg-magenta",
+  "46": "ansi-bg-cyan",
+  "47": "ansi-bg-white",
+  "0": "0",
+};
+
+export const defaultPalette: { [key: string]: string } = {
+  "ansi-black": "black",
+  "ansi-red": "red",
+  "ansi-green": "green",
+  "ansi-yellow": "yellow",
+  "ansi-blue": "blue",
+  "ansi-magenta": "magenta",
+  "ansi-cyan": "cyan",
+  "ansi-white": "white",
+  "ansi-bold-black": "grey",
+  "ansi-bold-red": "red",
+  "ansi-bold-green": "lime",
+  "ansi-bold-yellow": "yellow",
+  "ansi-bold-blue": "blue",
+  "ansi-bold-magenta": "magenta",
+  "ansi-bold-cyan": "cyan",
+  "ansi-bold-white": "white",
+  "ansi-bg-black": "black",
+  "ansi-bg-red": "red",
+  "ansi-bg-green": "green",
+  "ansi-bg-yellow": "yellow",
+  "ansi-bg-blue": "blue",
+  "ansi-bg-magenta": "magenta",
+  "ansi-bg-cyan": "cyan",
+  "ansi-bg-white": "white",
+  "ansi-ul-black": "black",
+  "ansi-ul-red": "red",
+  "ansi-ul-green": "green",
+  "ansi-ul-yellow": "yellow",
+  "ansi-ul-blue": "blue",
+  "ansi-ul-magenta": "magenta",
+  "ansi-ul-cyan": "cyan",
+  "ansi-ul-white": "white",
+};
+
+export interface AnsiObject {
+  classes: string[];
+  text: string;
+}
+
+export function toAnsiObjects(ansi: string): AnsiObject[] {
+  const regHasANSI = /\x1b\[(?:(?:[014];3[0-7])|4[0-7]|0)m/;
+  const reg = /\x1b\[(?:(?:[014];3[0-7])|4[0-7]|0)m/g;
+  const regParse = /\x1b\[((?:(?:[014];3[0-7])|4[0-7]|0))m/;
+  const tokens: string[] = [];
+  let match = reg.exec(ansi);
+  if (match == null) return [{ classes: [], text: ansi }];
+  let index = 0;
+  while (match != null) {
+    const idx = match.index;
+    if (idx > index) {
+      tokens.push(ansi.substring(index, idx));
+    }
+    const token = match[0];
+    const len = token.length;
+    index = idx + len;
+    tokens.push(token);
+    match = reg.exec(ansi);
+  }
+  if (index != ansi.length - 1) {
+    tokens.push(ansi.substring(index));
+  }
+  let hasOpenSpan = false;
+  let currentSpanClasses: [string, string] = ["", ""]; // [FG, BG]
+  let tempText: string[] = [];
+  const res: AnsiObject[] = [];
+  function closeTag() {
+    if (hasOpenSpan) {
+      res.push({
+        classes: currentSpanClasses.slice().filter((v) => v != ""),
+        text: tempText.join(" "),
+      });
+      tempText = [];
+      currentSpanClasses = ["", ""];
+    } else if (tempText.length > 0) {
+      res.push({
+        classes: [],
+        text: tempText.join(" "),
+      });
+    }
+  }
+  function isForegroundColor(d: string): boolean {
+    return d.startsWith("0;3") || d.startsWith("1;3") || d.startsWith("4;3");
+  }
+  tokens.forEach((token, i) => {
+    if (!regHasANSI.test(token)) {
+      tempText.push(token);
+      if (i == tokens.length - 1) {
+        // last item
+        closeTag();
+        return;
+      }
+    } else {
+      const m = regParse.exec(token);
+      if (m == null) return;
+      const clv = m[1];
+      const mapped = colorMap[clv];
+
+      if (hasOpenSpan) {
+        if (isForegroundColor(clv)) {
+          // foreground color
+          if (currentSpanClasses[0] != "") {
+            closeTag();
+          }
+          currentSpanClasses[0] = mapped;
+        } else if (clv.startsWith("4")) {
+          // background color
+          if (currentSpanClasses[1] != "") {
+            closeTag();
+          }
+          currentSpanClasses[1] = mapped;
+        } else if (clv == "0") {
+          // reset
+          closeTag();
+          hasOpenSpan = false;
+        } else {
+          console.log("Unhandled color:", mapped, clv);
+          throw new Error();
+        }
+      } else {
+        if (tempText.length > 0) {
+          res.push({ classes: [], text: tempText.join(" ") });
+          tempText = [];
+        }
+        hasOpenSpan = true;
+        if (isForegroundColor(clv)) {
+          // foreground color
+          currentSpanClasses[0] = mapped;
+        } else if (clv.startsWith("4")) {
+          // background color
+          currentSpanClasses[1] = mapped;
+        }
+      }
+      if (i == tokens.length - 1) {
+        // last item
+        closeTag();
+      }
+    }
+  });
+  return res;
+}
 
 const fonts: { [key: string]: string } = {
   spacemono: "SpaceMono",
@@ -87,9 +279,10 @@ export default defineComponent({
   setup() {
     const websocket_uri = inject("websocket_uri") as string;
     let prompt = ref<string>("$ ");
-    let output = ref<string>("");
+    let output = ref<AnsiObject[][]>([]);
     let socket: WebSocket;
     let inputValue = ref<string>();
+    let terminalOutputRef = ref<HTMLDivElement>();
     let terminalFont = ref<string>("monospace");
     let promptResolver: PromptResolver | null = null;
     const inputRef = ref<HTMLInputElement>();
@@ -165,8 +358,31 @@ export default defineComponent({
           // command
           const cmd: string[] = inptxt.substring(1).split(" ");
           switch (cmd[0]) {
+            case "colors": {
+              let res = "";
+              for (let i1 = 0; i1 < 8; i1++) {
+                res += `\x1b[0;3${i1}mText`;
+              }
+              log(res);
+              res = "";
+              for (let i1 = 0; i1 < 8; i1++) {
+                res += `\x1b[1;3${i1}mText`;
+              }
+              log(res);
+              res = "";
+              for (let i1 = 0; i1 < 8; i1++) {
+                res += `\x1b[4;3${i1}mText`;
+              }
+              log(res);
+              res = "";
+              for (let i1 = 0; i1 < 8; i1++) {
+                res += `\x1b[4${i1}mText`;
+              }
+              log(res);
+              break;
+            }
             case "clear":
-              output.value = "";
+              output.value = [];
               break;
             case "font":
               if (cmd[1] != undefined && fonts[cmd[1]] != undefined) {
@@ -242,7 +458,7 @@ export default defineComponent({
       }
       const v = args.map((v) => stringify(v)).join(" ");
       if (v.length == 0) return;
-      output.value = `${output.value}${v}\n`;
+      output.value.push(toAnsiObjects(v));
       scrollDown();
     }
 
@@ -265,7 +481,7 @@ export default defineComponent({
         else {
           switch (obj.event) {
             case "cwd":
-              prompt.value = `user@localhost:${obj.cwd}$ `;
+              prompt.value = `\x1b[0;32muser@localhost\x1b[0m:\x1b[0;34m${obj.cwd}\x1b[0m$ `;
               break;
           }
         }
@@ -307,6 +523,7 @@ export default defineComponent({
     });
 
     return {
+      toAnsiObjects,
       prompt,
       output,
       inputValue,
@@ -326,6 +543,7 @@ export default defineComponent({
       onUpArrow,
       onDownArrow,
       terminalFont,
+      terminalOutputRef,
     };
   },
 });
@@ -359,6 +577,10 @@ export default defineComponent({
   width: 100%;
   height: 100%;
 }
+.terminal_output {
+  flex-flow: row;
+  white-space: pre;
+}
 .terminal {
   font-family: monospace;
   font-size: 11pt;
@@ -366,7 +588,7 @@ export default defineComponent({
   display: flex;
   flex-flow: column;
   text-align: left;
-  background-color: rgb(41, 48, 56);
+  background-color: rgb(14, 15, 15);
   word-wrap: break-word;
   color: white;
 }
@@ -389,5 +611,125 @@ export default defineComponent({
 }
 .terminal_input:focus {
   outline: 0px;
+}
+.ansi-black {
+  color: black;
+}
+.ansi-red {
+  color: red;
+}
+.ansi-green {
+  color: green;
+}
+.ansi-yellow {
+  color: yellow;
+}
+.ansi-blue {
+  color: blue;
+}
+.ansi-magenta {
+  color: magenta;
+}
+.ansi-cyan {
+  color: cyan;
+}
+.ansi-white {
+  color: white;
+}
+.ansi-bold-black {
+  font-weight: bold;
+  color: grey;
+}
+.ansi-bold-red {
+  font-weight: bold;
+  color: red;
+}
+.ansi-bold-green {
+  font-weight: bold;
+  color: lime;
+}
+.ansi-bold-yellow {
+  font-weight: bold;
+  color: yellow;
+}
+.ansi-bold-blue {
+  font-weight: bold;
+  color: blue;
+}
+.ansi-bold-magenta {
+  font-weight: bold;
+  color: magenta;
+}
+.ansi-bold-cyan {
+  font-weight: bold;
+  color: cyan;
+}
+.ansi-bold-white {
+  font-weight: bold;
+  color: white;
+}
+.ansi-bg-black {
+  background-color: black;
+}
+.ansi-bg-red {
+  background-color: red;
+}
+.ansi-bg-green {
+  background-color: green;
+}
+.ansi-bg-yellow {
+  background-color: yellow;
+}
+.ansi-bg-blue {
+  background-color: blue;
+}
+.ansi-bg-magenta {
+  background-color: magenta;
+}
+.ansi-bg-cyan {
+  background-color: cyan;
+}
+.ansi-bg-white {
+  background-color: white;
+}
+.ansi-ul-black {
+  text-decoration: underline;
+  text-decoration-color: black;
+  color: black;
+}
+.ansi-ul-red {
+  text-decoration: underline;
+  text-decoration-color: red;
+  color: red;
+}
+.ansi-ul-green {
+  text-decoration: underline;
+  text-decoration-color: green;
+  color: green;
+}
+.ansi-ul-yellow {
+  text-decoration: underline;
+  text-decoration-color: yellow;
+  color: yellow;
+}
+.ansi-ul-blue {
+  text-decoration: underline;
+  text-decoration-color: blue;
+  color: blue;
+}
+.ansi-ul-magenta {
+  text-decoration: underline;
+  text-decoration-color: magenta;
+  color: magenta;
+}
+.ansi-ul-cyan {
+  text-decoration: underline;
+  text-decoration-color: cyan;
+  color: cyan;
+}
+.ansi-ul-white {
+  text-decoration: underline;
+  text-decoration-color: white;
+  color: white;
 }
 </style>
