@@ -34,7 +34,7 @@ export default defineComponent({
 <style>
 body,
 html {
-  background-color: rgb(41, 48, 56);
+  background-color: rgb(14, 15, 15);
   width: 99vw;
   margin: 0px;
   padding: 5px;
