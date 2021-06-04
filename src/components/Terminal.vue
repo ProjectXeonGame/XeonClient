@@ -619,13 +619,13 @@ export default defineComponent({
   color: red;
 }
 .ansi-green {
-  color: green;
+  color: rgb(93, 202, 93);
 }
 .ansi-yellow {
   color: yellow;
 }
 .ansi-blue {
-  color: blue;
+  color: rgb(140, 140, 230);
 }
 .ansi-magenta {
   color: magenta;
@@ -675,13 +675,13 @@ export default defineComponent({
   background-color: red;
 }
 .ansi-bg-green {
-  background-color: green;
+  background-color: rgb(93, 202, 93);
 }
 .ansi-bg-yellow {
   background-color: yellow;
 }
 .ansi-bg-blue {
-  background-color: blue;
+  background-color: rgb(140, 140, 230);
 }
 .ansi-bg-magenta {
   background-color: magenta;
@@ -704,8 +704,8 @@ export default defineComponent({
 }
 .ansi-ul-green {
   text-decoration: underline;
-  text-decoration-color: green;
-  color: green;
+  text-decoration-color: rgb(93, 202, 93);
+  color: rgb(93, 202, 93);
 }
 .ansi-ul-yellow {
   text-decoration: underline;
@@ -714,8 +714,8 @@ export default defineComponent({
 }
 .ansi-ul-blue {
   text-decoration: underline;
-  text-decoration-color: blue;
-  color: blue;
+  text-decoration-color: rgb(140, 140, 230);
+  color: rgb(140, 140, 230);
 }
 .ansi-ul-magenta {
   text-decoration: underline;
